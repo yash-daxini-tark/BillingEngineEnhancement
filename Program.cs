@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Collections;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using BillingEngineEnhancement;
@@ -7,12 +8,17 @@ namespace BillingEngine;
 class Program
 {
     #region Split Resource Usage Base on Month
-    public static List<AWSOnDemandResourceUsage> splitResourceUsageByMonth(List<AWSOnDemandResourceUsage> resourceUsages)
+    public static List<AWSOnDemandResourceUsage> splitResourceUsageByMonth(List<AWSOnDemandResourceUsage> resourceUsages, ref List<Customer> customers)
     {
         List<AWSOnDemandResourceUsage> updatedResources = new List<AWSOnDemandResourceUsage>();
         foreach (AWSOnDemandResourceUsage resource in resourceUsages)
         {
-            //updatedResources = updatedResources.Concat(resource.splitDateBasedOnItsMonth()).ToList();
+            var customerObj = customers.Where(customer => customer.CustomerID.Replace("-", "").Equals(resource.CustomerID)).Select(customer => customer).FirstOrDefault();
+            if (customerObj.freeInstanceDueDate == null)
+            {
+                customerObj.freeInstanceDueDate = resource.UsedFrom.AddMonths(11);
+            }
+            updatedResources = updatedResources.Concat(resource.splitDateBasedOnItsMonth()).ToList();
         }
         return updatedResources;
     }
@@ -29,47 +35,68 @@ class Program
     }
     #endregion
 
-    //#region Generate bill
+    #region Generate bill
 
-    //public static void generateBill(List<AWSResourceTypes> awsResourceTypes, List<AWSOnDemandResourceUsage> awsResourceUsage, List<Customer> customers)
-    //{
-    //    List<AWSOnDemandResourceUsage> updatedResources = splitResourceUsageByMonth(awsResourceUsage);
+    public static void generateBill(ref List<Customer> customers, ref List<AWSOnDemandResourceUsage> awsOnDemandResourceUsage, ref List<AWSReservedInstanceUsage> awsReservedInstanceUsages, ref List<AWSResourceTypes> awsResourceTypes, ref List<Region> regions)
+    {
+        List<AWSOnDemandResourceUsage> updatedawsOnDemandResourceUsage = splitResourceUsageByMonth(awsOnDemandResourceUsage, ref customers);
 
-    //    Dictionary<string, string> changesForEachInstanceType = awsResourceTypes.ToDictionary(type => type.InstanceType, type => type.Charge);
-    //    Dictionary<string, string> customerNames = customers.ToDictionary(customer => customer.CustomerID.Replace("-", ""), customer => customer.CustomerName);
+        //updatedawsOnDemandResourceUsage.ForEach(Console.WriteLine);
+        //awsResourceTypes.ForEach(Console.WriteLine);
+        Dictionary<IEnumerable<string>, string> freeInstanceForEachRegion = new Dictionary<IEnumerable<string>, string>();
 
-    //    calculateCostForEachResource(ref updatedResources, changesForEachInstanceType);
+        foreach (var type in awsResourceTypes)
+        {
+            IEnumerable<string> temp = new string[] { };
+            freeInstanceForEachRegion.Add(temp.Concat(new string[] { type.instanceType, type.region }),type.chargeOnDemand);
+        }
 
-    //    var groupedResources = updatedResources.GroupBy(resource => new { resource.CustomerID, resource.UsedFrom.Month, resource.UsedFrom.Year })
-    //                                       .Select(resource => new { Key = resource.Key, list = resource.Select(resource => resource).ToList() });
+        foreach (var item in freeInstanceForEachRegion.Keys)
+        {
+            Console.WriteLine(item.ElementAt(0));
+        }
 
-    //    foreach (var resource in groupedResources)
-    //    {
-    //        var g = resource.list.GroupBy(resource => new { resource.EC2InstanceType });
-    //        double totalAmount = Math.Round(resource.list.Sum(res => res.totalCost), 4);
-    //        string monthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(resource.Key.Month);
-    //        string fileName = resource.Key.CustomerID.Substring(0, 4) + "-" + resource.Key.CustomerID.Substring(4) + "_" + monthName.Substring(0, 3).ToUpper() + "-" + resource.Key.Year;
-    //        if (totalAmount == 0) continue;
-    //        List<BillResourceInformation> resourceInformation = new List<BillResourceInformation>();
-    //        foreach (var item5 in g)
-    //        {
-    //            string instanceType = item5.Key.EC2InstanceType;
-    //            int totalInstances = item5.Select(item => item.EC2InstanceID).Distinct().Count();
-    //            double totalCost = Math.Round(item5.Sum(item => item.totalCost), 4);
-    //            var sumOfDates = item5.Select(item => item.UsedUntil - item.UsedFrom).Aggregate((date1, date2) => date1.Add(date2));
-    //            if (sumOfDates.Seconds == 59) sumOfDates = sumOfDates.Add(new TimeSpan(0, 0, 0, 1));
-    //            resourceInformation.Add(new BillResourceInformation(instanceType, totalInstances, (int)Math.Floor(sumOfDates.TotalHours) + ":" + sumOfDates.Minutes + ":" + sumOfDates.Seconds
-    //                                            , (int)Math.Ceiling(sumOfDates.TotalHours) + ":00:00"
-    //                                            , changesForEachInstanceType[instanceType]
-    //                                            , totalCost));
-    //        }
-    //        BillFormat bill = new BillFormat(customerNames[resource.Key.CustomerID], "Bill for month of " + monthName + " " + resource.Key.Year
-    //                                            , "Total Amount: " + totalAmount, "Resource Type,Total Resources,Total Used Time (HH:mm:ss),Total Billed Time (HH:mm:ss),Rate (per hour),Total Amount"
-    //                                            , resourceInformation);
-    //        writeFile(fileName, bill.ToString());
-    //    }
-    //}
-    //#endregion
+
+        var groupByInstanceTypeRegion = awsResourceTypes.GroupBy(type => new { type.instanceType, type.region })
+                                                        .ToDictionary(type => type.Key, type => type.FirstOrDefault().chargeOnDemand);
+
+
+
+        //Dictionary<string, string> changesForEachInstanceType = awsResourceTypes.ToDictionary(type => type.instanceType, type => type.chargeOnDemand);
+        //    Dictionary<string, string> customerNames = customers.ToDictionary(customer => customer.CustomerID.Replace("-", ""), customer => customer.CustomerName);
+
+        //    calculateCostForEachResource(ref updatedResources, changesForEachInstanceType);
+
+        //    var groupedResources = updatedResources.GroupBy(resource => new { resource.CustomerID, resource.UsedFrom.Month, resource.UsedFrom.Year })
+        //                                       .Select(resource => new { Key = resource.Key, list = resource.Select(resource => resource).ToList() });
+
+        //    foreach (var resource in groupedResources)
+        //    {
+        //        var g = resource.list.GroupBy(resource => new { resource.EC2InstanceType });
+        //        double totalAmount = Math.Round(resource.list.Sum(res => res.totalCost), 4);
+        //        string monthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(resource.Key.Month);
+        //        string fileName = resource.Key.CustomerID.Substring(0, 4) + "-" + resource.Key.CustomerID.Substring(4) + "_" + monthName.Substring(0, 3).ToUpper() + "-" + resource.Key.Year;
+        //        if (totalAmount == 0) continue;
+        //        List<BillResourceInformation> resourceInformation = new List<BillResourceInformation>();
+        //        foreach (var item5 in g)
+        //        {
+        //            string instanceType = item5.Key.EC2InstanceType;
+        //            int totalInstances = item5.Select(item => item.EC2InstanceID).Distinct().Count();
+        //            double totalCost = Math.Round(item5.Sum(item => item.totalCost), 4);
+        //            var sumOfDates = item5.Select(item => item.UsedUntil - item.UsedFrom).Aggregate((date1, date2) => date1.Add(date2));
+        //            if (sumOfDates.Seconds == 59) sumOfDates = sumOfDates.Add(new TimeSpan(0, 0, 0, 1));
+        //            resourceInformation.Add(new BillResourceInformation(instanceType, totalInstances, (int)Math.Floor(sumOfDates.TotalHours) + ":" + sumOfDates.Minutes + ":" + sumOfDates.Seconds
+        //                                            , (int)Math.Ceiling(sumOfDates.TotalHours) + ":00:00"
+        //                                            , changesForEachInstanceType[instanceType]
+        //                                            , totalCost));
+        //        }
+        //        BillFormat bill = new BillFormat(customerNames[resource.Key.CustomerID], "Bill for month of " + monthName + " " + resource.Key.Year
+        //                                            , "Total Amount: " + totalAmount, "Resource Type,Total Resources,Total Used Time (HH:mm:ss),Total Billed Time (HH:mm:ss),Rate (per hour),Total Amount"
+        //                                            , resourceInformation);
+        //        writeFile(fileName, bill.ToString());
+        //    }
+    }
+    #endregion
 
     #region Take Input
 
@@ -114,13 +141,13 @@ class Program
         List<Region> regions = new List<Region>();
 
         takeInput(ref customers, ref awsOnDemandResourceUsage, ref awsReservedInstanceUsage, ref awsResourceTypes, ref regions, pathOfCustomer, pathOfAWSOnDemandResourceUsage, pathOfAWSReservedInstanceUsage, pathOfAWSResourceTypes, pathOfRegion);
-        //generateBill(awsResourceTypes, awsResourceUsage, customers, 1);
+        generateBill(ref customers, ref awsOnDemandResourceUsage, ref awsReservedInstanceUsage, ref awsResourceTypes, ref regions);
 
-        customers.ForEach(Console.WriteLine);
-        awsOnDemandResourceUsage.ForEach(Console.WriteLine);
-        awsReservedInstanceUsage.ForEach(Console.WriteLine);
-        awsResourceTypes.ForEach(Console.WriteLine);
-        regions.ForEach(Console.WriteLine);
+        //customers.ForEach(Console.WriteLine);
+        //awsOnDemandResourceUsage.ForEach(Console.WriteLine);
+        //awsReservedInstanceUsage.ForEach(Console.WriteLine);
+        //awsResourceTypes.ForEach(Console.WriteLine);
+        //regions.ForEach(Console.WriteLine);
 
 
         #endregion

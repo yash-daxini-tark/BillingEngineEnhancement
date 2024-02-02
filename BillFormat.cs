@@ -19,6 +19,8 @@ namespace BillingEngine
         public string CustomerName { get; set; }
         public string TimeInfo { get; set; }
         public string TotalAmount { get; set; }
+        public string TotalDiscount { get; set; }
+        public string ActualAmount { get; set; }
         public string TableRow { get; set; }
 
         List<BillResourceInformation> resourceUsage { get; set; }

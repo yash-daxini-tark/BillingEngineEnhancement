@@ -11,27 +11,27 @@ namespace BillingEngine
     internal class AWSResourceTypes
     {
         [Name("Instance Type")]
-        public string InstanceType { get; set; }
+        public string instanceType { get; set; }
         [Name("Charge/Hour(OnDemand)")]
         //[System.ComponentModel.TypeConverter(typeof(DoubleConverter))]
-        public string ChargeOnDemand { get; set; }
+        public string chargeOnDemand { get; set; }
         [Name("Charge/Hour(Reserved)")]
         //[System.ComponentModel.TypeConverter(typeof(DoubleConverter))]
-        public string ChargeReserved { get; set; }
+        public string chargeReserved { get; set; }
         [Name("Region")]
-        public string Region { get; set; }
+        public string region { get; set; }
         public AWSResourceTypes(string instanceType, string chargeOnDemand, string chargeReserved, string region)
         {
-            InstanceType = instanceType;
-            ChargeOnDemand = chargeOnDemand;
-            ChargeReserved = chargeReserved;
-            Region = region;
+            this.instanceType = instanceType;
+            this.chargeOnDemand = chargeOnDemand;
+            this.chargeReserved = chargeReserved;
+            this.region = region;
         }
         public AWSResourceTypes() { }
         override
         public string ToString()
         {
-            return InstanceType + " " + ChargeOnDemand + " "+ ChargeReserved + " " +Region;
+            return instanceType + " " + chargeOnDemand + " "+ chargeReserved + " " +region;
         }
     }
 }

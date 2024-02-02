@@ -18,8 +18,8 @@ namespace BillingEngine
         [Ignore]
         public double totalCost { get; set; }
 
-        public AWSOnDemandResourceUsage()  { }
-        public AWSOnDemandResourceUsage(string customerID, string eC2InstanceID, string eC2InstanceType, DateTime usedFrom, DateTime usedUntil) : base(customerID, eC2InstanceID, eC2InstanceType)
+        public AWSOnDemandResourceUsage() { }
+        public AWSOnDemandResourceUsage(string customerID, string eC2InstanceID, string eC2InstanceType, DateTime usedFrom, DateTime usedUntil, string Region, string OS) : base(customerID, eC2InstanceID, eC2InstanceType, Region, OS)
         {
             CustomerID = customerID;
             EC2InstanceID = eC2InstanceID;
@@ -37,21 +37,21 @@ namespace BillingEngine
             UsedUntil = aWSResourceUsage.UsedUntil;
             totalCost = 0;
         }
-        //public List<AWSOnDemandResourceUsage> splitDateBasedOnItsMonth()
-        //{
-        //    List<AWSOnDemandResourceUsage> updatedResources = new List<AWSOnDemandResourceUsage>();
-        //    var totalDifferenceInSeconds = (UsedUntil - UsedFrom).TotalSeconds;
-        //    DateTime startDateOfService = UsedFrom;
-        //    while (totalDifferenceInSeconds > 0)
-        //    {
-        //        DateTime endDateOfMonth = new DateTime(startDateOfService.Year, startDateOfService.Month, DateTime.DaysInMonth(startDateOfService.Year, startDateOfService.Month), 23, 59, 59);
-        //        double minimumSeconds = Math.Min((endDateOfMonth - startDateOfService).TotalSeconds, totalDifferenceInSeconds);
-        //        totalDifferenceInSeconds -= minimumSeconds + 1;
-        //        updatedResources.Add(new AWSOnDemandResourceUsage(CustomerID, EC2InstanceID, EC2InstanceType, startDateOfService, startDateOfService.AddSeconds(minimumSeconds)));
-        //        startDateOfService += new TimeSpan(0, 0, 0, (int)Math.Ceiling(minimumSeconds + 1));
-        //    }
-        //    return updatedResources;
-        //}
+        public List<AWSOnDemandResourceUsage> splitDateBasedOnItsMonth()
+        {
+            List<AWSOnDemandResourceUsage> updatedResources = new List<AWSOnDemandResourceUsage>();
+            var totalDifferenceInSeconds = (UsedUntil - UsedFrom).TotalSeconds;
+            DateTime startDateOfService = UsedFrom;
+            while (totalDifferenceInSeconds > 0)
+            {
+                DateTime endDateOfMonth = new DateTime(startDateOfService.Year, startDateOfService.Month, DateTime.DaysInMonth(startDateOfService.Year, startDateOfService.Month), 23, 59, 59);
+                double minimumSeconds = Math.Min((endDateOfMonth - startDateOfService).TotalSeconds, totalDifferenceInSeconds);
+                totalDifferenceInSeconds -= minimumSeconds + 1;
+                updatedResources.Add(new AWSOnDemandResourceUsage(CustomerID, EC2InstanceID, EC2InstanceType, startDateOfService, startDateOfService.AddSeconds(minimumSeconds), Region, OS));
+                startDateOfService += new TimeSpan(0, 0, 0, (int)Math.Ceiling(minimumSeconds + 1));
+            }
+            return updatedResources;
+        }
         public double calculateCost(double charge)
         {
             totalCost = Math.Ceiling((UsedUntil - UsedFrom).TotalHours) * charge;
@@ -60,7 +60,7 @@ namespace BillingEngine
         override
         public string ToString()
         {
-            return CustomerID + " " + EC2InstanceID + " " + EC2InstanceType + " " + UsedFrom.ToString() + " " + UsedUntil + " " + totalCost;
+            return CustomerID + " " + EC2InstanceID + " " + EC2InstanceType + " " + Region + " " + OS + " " + UsedFrom.ToString() + " " + UsedUntil + " " + totalCost;
         }
     }
 }

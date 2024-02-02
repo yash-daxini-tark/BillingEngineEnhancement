@@ -19,7 +19,7 @@ namespace BillingEngineEnhancement
         public double totalCost { get; set; }
 
         public AWSReservedInstanceUsage() { }
-        public AWSReservedInstanceUsage(string customerID, string eC2InstanceID, string eC2InstanceType, DateTime usedFrom, DateTime usedUntil) : base(customerID, eC2InstanceID, eC2InstanceType)
+        public AWSReservedInstanceUsage(string customerID, string eC2InstanceID, string eC2InstanceType, DateTime usedFrom, DateTime usedUntil, string Region, string OS) : base(customerID, eC2InstanceID, eC2InstanceType, Region, OS)
         {
             CustomerID = customerID;
             EC2InstanceID = eC2InstanceID;
@@ -60,7 +60,7 @@ namespace BillingEngineEnhancement
         override
         public string ToString()
         {
-            return CustomerID + " " + EC2InstanceID + " " + EC2InstanceType + " " + StartDate.ToString() + " " + EndDate + " " + totalCost;
+            return CustomerID + " " + EC2InstanceID + " " + EC2InstanceType + " " + Region + " " + OS + " " + StartDate.ToString() + " " + EndDate + " " + totalCost;
         }
     }
 }
