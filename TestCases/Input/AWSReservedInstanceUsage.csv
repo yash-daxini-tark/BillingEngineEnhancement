@@ -1,0 +1,3 @@
+Sr No,Customer ID,EC2 Instance ID,EC2 Instance Type,Start Date,End Date,Region,OS
+1,CUST001,t3-hsgjs,t3.medium,2019-01-01,2019-12-31,Asia (Delhi),Linux
+2,CUST002,t3-hsgjs,t3.micro,2021-01-01,2021-12-31,Asia (Delhi),Linux

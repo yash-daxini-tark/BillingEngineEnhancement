@@ -1,0 +1,10 @@
+Sr No,Instance Type,Charge/Hour(OnDemand),Charge/Hour(Reserved),Region
+1,t3.medium,$0.0104,0.085,US (Ohio)
+2,t3.medium,$0.0125,0.0100,Asia (Mumbai)
+3,t3.medium,$0.0250,0.0200,Middle East
+4,t3.micro,$0.0105,0.090,US (Ohio)
+5,t3.xlarge,$0.0350,0.0450,Middle East
+6,t3.large,$0.0450,0.506,Asia (Delhi)
+7,t3.medium,$0.0250,0.446,Asia (Delhi)
+8,t3.micro,$0.0105,0.090,Asia (Delhi)
+9,t3.micro,$0.0198,0.098,Asia (Mumbai)

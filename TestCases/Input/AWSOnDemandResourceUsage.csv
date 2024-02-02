@@ -1,0 +1,13 @@
+Sr No,Customer ID,EC2 Instance ID,EC2 Instance Type,Used From,Used Until,Region,OS
+1,CUST001,t3-ewgst,t3.medium,2021-01-01T00:00:00,2021-02-01T00:00:00,US (Ohio),Linux
+2,CUST001,t3-vnjjz,t3.medium,2021-01-01T00:00:00,2021-02-01T00:00:00,US (Ohio),Windows
+3,CUST001,t3-bedxb,t3.medium,2021-01-01T00:00:00,2021-02-01T00:00:00,Asia (Mumbai),Linux
+4,CUST001,t3-ekecp,t3.medium,2021-01-01T00:00:00,2021-02-01T00:00:00,Asia (Mumbai),Windows
+5,CUST002,t3-zcdlt,t3.micro,2021-06-01T00:00:00,2022-06-01T00:00:00,Asia (Delhi),Windows
+6,CUST003,t3-wasis,t3.xlarge,2021-01-15T00:00:00,2021-01-15T00:00:01,Middle East,Linux
+7,CUST003,t3-ufufu,t3.xlarge,2022-01-01T00:00:00,2022-01-01T00:00:01,Middle East,Windows
+8,CUST004,t3-bujme,t3.micro,2024-01-01T00:00:00,2024-04-01T00:00:01,Asia (Mumbai),Linux
+9,CUST005,t3-ewgst,t3.medium,2021-01-01T00:00:00,2021-02-01T00:00:00,US (Ohio),Linux
+10,CUST005,t3-vnjjz,t3.medium,2021-01-01T00:00:00,2021-02-01T00:00:00,US (Ohio),Windows
+11,CUST005,t3-ewgst,t3.medium,2021-03-01T00:00:00,2021-04-01T00:00:00,US (Ohio),Linux
+12,CUST005,t3-vnjjz,t3.medium,2021-03-01T00:00:00,2021-04-01T00:00:00,US (Ohio),Linux
