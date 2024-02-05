@@ -63,10 +63,6 @@ namespace BillingEngineEnhancement
             TimeSpan difference = UsedUntil - UsedFrom;
             totalCost += Math.Ceiling((UsedUntil - UsedFrom).TotalHours) * Convert.ToDouble(charge);
             totalUsedTime += difference;
-            if (UsedFrom.Month == 6)
-            {   
-                Console.WriteLine(UsedFrom + " " + UsedUntil + " " + totalUsedTime + " " + CustomerID + " " + Region);
-            }
             return totalCost;
         }
         public override string ToString()

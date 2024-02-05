@@ -7,25 +7,13 @@ using BillingEngineEnhancement;
 namespace BillingEngine;
 class Program
 {
-    #region Split Resource Usage Base on Month for on demand
-    public static List<AWSResourceUsages> splitResourceUsageByMonth(List<AWSResourceUsages> resourceUsages, ref List<Customer> customers)
+    #region Split Resource Usage Base on Month
+    public static List<AWSResourceUsages> splitResourceUsageByMonth(List<AWSResourceUsages> resourceUsages, bool isReserved)
     {
         List<AWSResourceUsages> updatedResources = new List<AWSResourceUsages>();
         foreach (AWSResourceUsages resource in resourceUsages)
         {
-            updatedResources = updatedResources.Concat(resource.splitDateBasedOnItsMonth()).ToList();
-        }
-        return updatedResources;
-    }
-    #endregion
-
-    #region Split Resource Usage Base on Month on reserved
-    public static List<AWSResourceUsages> splitResourceUsageByMonthForOnReserved(List<AWSResourceUsages> resourceUsages, ref List<Customer> customers)
-    {
-        List<AWSResourceUsages> updatedResources = new List<AWSResourceUsages>();
-        foreach (AWSResourceUsages resource in resourceUsages)
-        {
-            resource.UsedUntil = resource.UsedUntil.Add(new TimeSpan(23, 59, 59));
+            if (isReserved) resource.UsedUntil = resource.UsedUntil.Add(new TimeSpan(23, 59, 59));
             updatedResources = updatedResources.Concat(resource.splitDateBasedOnItsMonth()).ToList();
         }
         return updatedResources;
@@ -33,57 +21,36 @@ class Program
     #endregion
 
     #region Calculate Cost For on demand
-    public static void calculateCostForOnDemandResource(ref List<AWSResourceUsages> updatedResources, ref List<Customer> customers, Dictionary<string, string> changesForEachInstanceType, Dictionary<string, string> freeInstanceForEachRegion)
+    public static void calculateCost(ref List<AWSResourceUsages> updatedResources, ref List<Customer> customers, Dictionary<string, string> changesForEachInstanceType, Dictionary<string, string> freeInstanceForEachRegion, bool isReserved)
     {
         foreach (AWSResourceUsages resource in updatedResources)
         {
-            Customer customer = customers.Where(customer => customer.CustomerID.Replace("-", "").Equals(resource.CustomerID)).FirstOrDefault();
-            string cost = changesForEachInstanceType[resource.EC2InstanceType + "-" + resource.Region].Split("-")[0].Substring(1);
-            var differenceOfDates = customer.freeInstanceDueDate - resource.UsedFrom;
-            if (customer.freeInstanceDueDate < resource.UsedFrom)
-            {
-                resource.calculateCost(cost);
-            }
-            else if (!freeInstanceForEachRegion[resource.Region].Equals(resource.EC2InstanceType))
+            var customer = customers.Where(customer => customer.CustomerID.Replace("-", "").Equals(resource.CustomerID)).FirstOrDefault();
+            string cost = changesForEachInstanceType[resource.EC2InstanceType + "-" + resource.Region].Split("-")[isReserved ? 1 : 0].Substring(1);
+            if (customer.freeInstanceDueDate < resource.UsedFrom || !freeInstanceForEachRegion[resource.Region].Equals(resource.EC2InstanceType) || isReserved)
             {
                 resource.calculateCost(cost);
             }
             else
             {
-                TimeSpan difference = resource.UsedUntil - resource.UsedFrom;
-                Console.WriteLine(difference);
-                int totalHours = (int)Math.Ceiling((difference).TotalHours);
+                int totalHours = (int)Math.Ceiling((resource.UsedUntil - resource.UsedFrom).TotalHours);
                 int month = resource.UsedFrom.Month;
+                int min = 0;
                 if (resource.OS.Equals("Windows"))
                 {
-                    int min = Math.Min(totalHours, customer.freeInstanceForWindows[month - 1]);
+                    min = Math.Min(totalHours, customer.freeInstanceForWindows[month - 1]);
                     customer.freeInstanceForWindows[month - 1] -= min;
-                    int rem = totalHours - min;
-                    resource.totalCost += rem * Convert.ToDouble(cost);
-                    resource.totalUsedTime += difference;
-                    resource.totalDiscount += min * Convert.ToDouble(cost);
                 }
                 else if (resource.OS.Equals("Linux"))
                 {
-                    int min = Math.Min(totalHours, customer.freeInstanceForLinux[month - 1]);
+                    min = Math.Min(totalHours, customer.freeInstanceForLinux[month - 1]);
                     customer.freeInstanceForLinux[month - 1] -= min;
-                    int rem = totalHours - min;
-                    resource.totalCost += rem * Convert.ToDouble(cost);
-                    resource.totalUsedTime += difference;
-                    resource.totalDiscount += min * Convert.ToDouble(cost);
                 }
+                int rem = totalHours - min;
+                resource.totalCost += rem * Convert.ToDouble(cost);
+                resource.totalUsedTime += (resource.UsedUntil - resource.UsedFrom);
+                resource.totalDiscount += min * Convert.ToDouble(cost);
             }
-        }
-    }
-    #endregion
-
-    #region calculate cost for reserved 
-    public static void calculateCostForOnReservedInstance(ref List<AWSResourceUsages> AWSResourceUsagess, Dictionary<string, string> chargeOfEachInstance)
-    {
-        foreach (var resource in AWSResourceUsagess)
-        {
-            var cost = chargeOfEachInstance[resource.EC2InstanceType + "-" + resource.Region].Split("-")[1];
-            resource.calculateCost(cost);
         }
     }
     #endregion
@@ -92,18 +59,12 @@ class Program
 
     public static void generateBill(ref List<Customer> customers, ref List<AWSResourceUsages> onDemandAWSResourceUsages, ref List<AWSResourceUsages> reservedAWSResourceUsages, ref List<AWSResourceTypes> awsResourceTypes, ref List<Region> regions)
     {
-        List<AWSResourceUsages> updatedAWSResourceUsagesD = splitResourceUsageByMonth(onDemandAWSResourceUsages, ref customers);
-
-        List<AWSResourceUsages> updatedAWSResourceUsagesR = splitResourceUsageByMonthForOnReserved(reservedAWSResourceUsages, ref customers);
+        List<AWSResourceUsages> updatedAWSResourceUsagesD = splitResourceUsageByMonth(onDemandAWSResourceUsages, false);
+        List<AWSResourceUsages> updatedAWSResourceUsagesR = splitResourceUsageByMonth(reservedAWSResourceUsages, true);
 
         Dictionary<string, string> customerNames = customers.ToDictionary(customer => customer.CustomerID.Replace("-", ""), customer => customer.CustomerName);
         Dictionary<string, string> freeInstanceForEachRegion = regions.ToDictionary(region => region.region, region => region.freeTierEligible);
-        Dictionary<string, string> changesForEachInstanceType = new Dictionary<string, string>();
-
-        foreach (var type in awsResourceTypes)
-        {
-            changesForEachInstanceType.Add(type.instanceType + "-" + type.region, type.chargeOnDemand + "-" + type.chargeReserved);
-        }
+        Dictionary<string, string> changesForEachInstanceType = awsResourceTypes.ToDictionary(type => type.instanceType + "-" + type.region, type => type.chargeOnDemand + "-" + type.chargeReserved);
 
         List<AWSResourceUsages> finalList = updatedAWSResourceUsagesD.Concat(updatedAWSResourceUsagesR).ToList();
         foreach (var item in finalList)
@@ -112,9 +73,8 @@ class Program
             customerObj.freeInstanceDueDate = finalList.Where(res => res.CustomerID.Equals(item.CustomerID)).Select(res => res.UsedFrom).Min(res => res).AddMonths(11);
         }
 
-        calculateCostForOnDemandResource(ref updatedAWSResourceUsagesD, ref customers, changesForEachInstanceType, freeInstanceForEachRegion);
-
-        calculateCostForOnReservedInstance(ref updatedAWSResourceUsagesR, changesForEachInstanceType);
+        calculateCost(ref updatedAWSResourceUsagesD, ref customers, changesForEachInstanceType, freeInstanceForEachRegion, false);
+        calculateCost(ref updatedAWSResourceUsagesR, ref customers, changesForEachInstanceType, freeInstanceForEachRegion, true);
 
         var groupedResources = finalList.GroupBy(resource => new { resource.CustomerID, resource.UsedFrom.Month, resource.UsedFrom.Year })
                                            .Select(resource => new { Key = resource.Key, list = resource.Select(resource => resource).ToList() });
@@ -166,13 +126,10 @@ class Program
     #endregion
 
     #region Write Into File
-
     public static void writeFile(string fileName, string content)
     {
         string directory = "../../../Output/" + "Testcase";
-
         if (!Directory.Exists(directory)) Directory.CreateDirectory(directory);
-
         File.WriteAllText(directory + "/" + fileName + ".csv", content);
     }
     #endregion
@@ -180,7 +137,6 @@ class Program
     public static void Main(string[] args)
     {
         #region Get Input
-
         string pathOfOnDemandAWSResourceUsages = "../../../TestCases/Input/AWSOnDemandResourceUsage.csv";
         string pathOfReservedAWSResourceUsages = "../../../TestCases/Input/AWSReservedInstanceUsage.csv";
         string pathOfAWSResourceTypes = "../../../TestCases/Input/AWSResourceTypes.csv";
@@ -194,22 +150,12 @@ class Program
         List<Region> regions = new List<Region>();
 
         takeInput(ref customers, ref onDemandAWSResourceUsages, ref reserAWSResourceUsages, ref awsResourceTypes, ref regions, pathOfCustomer, pathOfOnDemandAWSResourceUsages, pathOfReservedAWSResourceUsages, pathOfAWSResourceTypes, pathOfRegion);
-
         foreach (var customer in customers)
         {
             Array.Fill(customer.freeInstanceForLinux, 750);
             Array.Fill(customer.freeInstanceForWindows, 750);
         }
-
         generateBill(ref customers, ref onDemandAWSResourceUsages, ref reserAWSResourceUsages, ref awsResourceTypes, ref regions);
-
-        //customers.ForEach(Console.WriteLine);
-        //AWSResourceUsages.ForEach(Console.WriteLine);
-        //AWSResourceUsages.ForEach(Console.WriteLine);
-        //awsResourceTypes.ForEach(Console.WriteLine);
-        //regions.ForEach(Console.WriteLine);
-
-
         #endregion
     }
 }
