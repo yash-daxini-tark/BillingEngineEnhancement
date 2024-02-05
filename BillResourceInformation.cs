@@ -8,8 +8,9 @@ namespace BillingEngine
 {
     internal class BillResourceInformation
     {
-        public BillResourceInformation(string resourceType, int numberOfResources, string usedTime, string billedTime, string totalAmount, string discount, string actualAmount)
+        public BillResourceInformation(string region, string resourceType, int numberOfResources, string usedTime, string billedTime, string totalAmount, string discount, string actualAmount)
         {
+            this.region = region;
             this.resourceType = resourceType;
             this.numberOfResources = numberOfResources;
             this.usedTime = usedTime;
@@ -30,7 +31,7 @@ namespace BillingEngine
 
         public override string ToString()
         {
-            return string.Format("{0},{1},{2},{3},${4},${5},${6}", resourceType, numberOfResources, usedTime, billedTime, totalAmount, discount, actualAmount);
+            return string.Format("{0}, {1}, {2}, {3}, {4}, ${5}, ${6}, ${7}", region, resourceType, numberOfResources, usedTime, billedTime, totalAmount, discount, actualAmount);
         }
 
     }

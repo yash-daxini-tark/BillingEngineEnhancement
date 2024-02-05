@@ -31,7 +31,7 @@ namespace BillingEngine
         override
         public string ToString()
         {
-            return instanceType + " " + chargeOnDemand + " "+ chargeReserved + " " +region;
+            return instanceType + " " + chargeOnDemand + " " + chargeReserved + " " + region;
         }
     }
 }

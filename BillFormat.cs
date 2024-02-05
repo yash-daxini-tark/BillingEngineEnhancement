@@ -8,12 +8,14 @@ namespace BillingEngine
 {
     internal class BillFormat
     {
-        public BillFormat(string CustomerName, string TimeInfo, string TotalAmount, string TableRow, List<BillResourceInformation> resourceUsage)
+        public BillFormat(string CustomerName, string TimeInfo, string TotalAmount, string TotalDiscount, string ActualAmount, string TableRow, List<BillResourceInformation> resourceUsage)
         {
             this.CustomerName = CustomerName;
             this.TimeInfo = TimeInfo;
             this.TotalAmount = TotalAmount;
             this.TableRow = TableRow;
+            this.TotalDiscount = TotalDiscount;
+            this.ActualAmount = ActualAmount;
             this.resourceUsage = new List<BillResourceInformation>(resourceUsage);
         }
         public string CustomerName { get; set; }
@@ -31,6 +33,8 @@ namespace BillingEngine
             bill.AppendLine(CustomerName);
             bill.AppendLine(TimeInfo);
             bill.AppendLine(TotalAmount);
+            bill.AppendLine(TotalDiscount);
+            bill.AppendLine(ActualAmount);
             bill.AppendLine(TableRow);
             foreach (BillResourceInformation resource in resourceUsage)
             {

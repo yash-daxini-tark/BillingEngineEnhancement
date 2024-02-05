@@ -14,21 +14,23 @@ namespace BillingEngine
         [Name("Customer Name")]
         public string CustomerName { get; set; }
         [Ignore]
-        public int[] freeInstanceForWindows { get; set; }
+        public int[] freeInstanceForWindows = new int[12];
         [Ignore]
-        public int[] freeInstanceForLinux { get; set; }
+        public int[] freeInstanceForLinux = new int[12];
         [Ignore]
-        public DateTime? freeInstanceDueDate { get; set; }
+        public DateTime freeInstanceDueDate { get; set; }
+        [Ignore]
+        public bool isDueDateSet { get; set; }
 
         public Customer(string customerID, string customerName)
         {
             CustomerID = customerID;
             CustomerName = customerName;
-            freeInstanceForLinux = new int[12];
-            freeInstanceForWindows = new int[12];
+            //freeInstanceForLinux = new int[12];
+            //freeInstanceForWindows = new int[12];
             Array.Fill(freeInstanceForLinux, 750);
             Array.Fill(freeInstanceForWindows, 750);
-            freeInstanceDueDate = null;
+            isDueDateSet = false;
         }
         public Customer() { }
         override
@@ -38,3 +40,4 @@ namespace BillingEngine
         }
     }
 }
+
